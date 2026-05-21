@@ -23,8 +23,9 @@ fun LoginScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
-    val backgroundColor = Color(0xFF1A1A1A)
-    val primaryOrange = Color(0xFFFF5722)
+    /*val backgroundColor = Color(0xFF1A1A1A) modo dark ideia para mudar com escolha do usuario*/
+    val backgroundColor = Color(0xFFFFFFFF)
+    val primaryWhite = Color(0xFFFF5722)
 
     Column(
         modifier = Modifier
@@ -38,7 +39,7 @@ fun LoginScreen(
             text = "LOTO-EASY",
             fontSize = 36.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.White,
+            color = primaryWhite,
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(bottom = 8.dp)
         )
@@ -57,12 +58,12 @@ fun LoginScreen(
             label = { Text("Email", color = Color.Gray) },
             singleLine = true,
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = primaryOrange,
+                focusedBorderColor = primaryWhite,
                 unfocusedBorderColor = Color.Gray,
-                focusedLabelColor = primaryOrange,
-                cursorColor = primaryOrange,
-                focusedTextColor = Color.White,
-                unfocusedTextColor = Color.White
+                focusedLabelColor = primaryWhite,
+                cursorColor = primaryWhite,
+                focusedTextColor = Color.Black,
+                unfocusedTextColor = Color.Black
             ),
             shape = RoundedCornerShape(12.dp),
             modifier = Modifier
@@ -77,12 +78,12 @@ fun LoginScreen(
             singleLine = true,
             visualTransformation = PasswordVisualTransformation(),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = primaryOrange,
+                focusedBorderColor = primaryWhite,
                 unfocusedBorderColor = Color.Gray,
-                focusedLabelColor = primaryOrange,
-                cursorColor = primaryOrange,
-                focusedTextColor = Color.White,
-                unfocusedTextColor = Color.White
+                focusedLabelColor = primaryWhite,
+                cursorColor = primaryWhite,
+                focusedTextColor = Color.Black,
+                unfocusedTextColor = Color.Black
             ),
             shape = RoundedCornerShape(12.dp),
             modifier = Modifier
@@ -92,7 +93,7 @@ fun LoginScreen(
 
         Button(
             onClick = onLoginClick,
-            colors = ButtonDefaults.buttonColors(containerColor = primaryOrange),
+            colors = ButtonDefaults.buttonColors(containerColor = primaryWhite),
             shape = RoundedCornerShape(12.dp),
             modifier = Modifier
                 .fillMaxWidth()

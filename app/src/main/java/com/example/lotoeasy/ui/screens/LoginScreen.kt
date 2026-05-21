@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.sp
 
 @Composable
 fun LoginScreen(
+    modifier: Modifier = Modifier,
     onLoginClick: () -> Unit = {},
     onRegisterClick: () -> Unit = {}
 ) {

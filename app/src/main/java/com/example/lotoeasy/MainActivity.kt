@@ -11,6 +11,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.lotoeasy.ui.screens.LoginScreen
+import com.example.lotoeasy.ui.screens.ProfileScreen
 import com.example.lotoeasy.ui.screens.RegisterScreen
 import com.example.lotoeasy.ui.theme.LotoeasyTheme
 
@@ -34,11 +35,12 @@ class MainActivity : ComponentActivity() {
                         composable("login") {
                             LoginScreen(
                                 onLoginClick = {
+                                    // Quando clicar em Entrar na demonstração, vai para o Perfil!
+                                    navController.navigate("profile")
                                 },
                                 onRegisterClick = {
                                     navController.navigate("register")
                                 }
-
                             )
                         }
 
@@ -56,6 +58,9 @@ class MainActivity : ComponentActivity() {
                                     }
                                 }
                             )
+                        }
+                        composable(route = "profile") {
+                            ProfileScreen()
                         }
                     }
                 }

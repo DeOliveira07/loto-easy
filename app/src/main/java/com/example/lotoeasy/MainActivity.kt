@@ -12,6 +12,8 @@ import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.rememberCoroutineScope
@@ -29,6 +31,8 @@ import com.example.lotoeasy.ui.screens.NextDrawScreen
 import com.example.lotoeasy.ui.screens.ProfileScreen
 import com.example.lotoeasy.ui.screens.RaffleRegistrationScreen
 import com.example.lotoeasy.ui.screens.RegisterScreen
+import com.example.lotoeasy.ui.screens.DashboardScreen
+import com.example.lotoeasy.ui.screens.HistoryScreen // 💡 Tela de Histórico
 import com.example.lotoeasy.ui.theme.LotoOrange
 import com.example.lotoeasy.ui.theme.LotoeasyTheme
 import kotlinx.coroutines.launch
@@ -45,7 +49,6 @@ class MainActivity : ComponentActivity() {
                 val navBackStackEntry = navController.currentBackStackEntryAsState()
                 val currentRoute = navBackStackEntry.value?.destination?.route
 
-                // Define quais telas NÃO mostram o menu (Login e Register)
                 val showDrawer = currentRoute != "login" && currentRoute != "register" && currentRoute != null
 
                 ModalNavigationDrawer(
@@ -61,6 +64,28 @@ class MainActivity : ComponentActivity() {
                                 fontWeight = FontWeight.Bold,
                                 color = LotoOrange
                             )
+
+                            NavigationDrawerItem(
+                                icon = { Icon(Icons.Default.Home, null) },
+                                label = { Text("Início") },
+                                selected = currentRoute == "dashboard",
+                                onClick = {
+                                    navController.navigate("dashboard") {
+                                        launchSingleTop = true
+                                    }
+                                    scope.launch { drawerState.close() }
+                                },
+                                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
+                                colors = NavigationDrawerItemDefaults.colors(
+                                    selectedIconColor = LotoOrange,
+                                    selectedTextColor = LotoOrange,
+                                    selectedContainerColor = LotoOrange.copy(alpha = 0.1f),
+                                    unselectedIconColor = Color.Gray,
+                                    unselectedTextColor = Color.Gray,
+                                    unselectedContainerColor = Color.Transparent
+                                )
+                            )
+
                             NavigationDrawerItem(
                                 icon = { Icon(Icons.Default.DateRange, null) },
                                 label = { Text("Próximos Sorteios") },
@@ -81,6 +106,28 @@ class MainActivity : ComponentActivity() {
                                     unselectedContainerColor = Color.Transparent
                                 )
                             )
+
+                            NavigationDrawerItem(
+                                icon = { Icon(Icons.Default.History, null) },
+                                label = { Text("Histórico de Registros") },
+                                selected = currentRoute == "history",
+                                onClick = {
+                                    navController.navigate("history") {
+                                        launchSingleTop = true
+                                    }
+                                    scope.launch { drawerState.close() }
+                                },
+                                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
+                                colors = NavigationDrawerItemDefaults.colors(
+                                    selectedIconColor = LotoOrange,
+                                    selectedTextColor = LotoOrange,
+                                    selectedContainerColor = LotoOrange.copy(alpha = 0.1f),
+                                    unselectedIconColor = Color.Gray,
+                                    unselectedTextColor = Color.Gray,
+                                    unselectedContainerColor = Color.Transparent
+                                )
+                            )
+
                             NavigationDrawerItem(
                                 icon = { Icon(Icons.Default.Add, null) },
                                 label = { Text("Cadastrar Talão") },
@@ -128,7 +175,7 @@ class MainActivity : ComponentActivity() {
                                 selected = false,
                                 onClick = {
                                     navController.navigate("login") {
-                                        popUpTo(0) { inclusive = true }
+                                        popUpTo("dashboard") { inclusive = true }
                                     }
                                     scope.launch { drawerState.close() }
                                 },
@@ -145,15 +192,17 @@ class MainActivity : ComponentActivity() {
                         topBar = {
                             if (showDrawer) {
                                 TopAppBar(
-                                    title = { 
+                                    title = {
                                         Text(
                                             when(currentRoute) {
+                                                "dashboard" -> "Início"
                                                 "next_draws" -> "Sorteios"
+                                                "history" -> "Histórico de Registros"
                                                 "raffle_registration" -> "Cadastrar Talão"
                                                 "profile" -> "Meu Perfil"
                                                 else -> "Loto-Easy"
                                             }
-                                        ) 
+                                        )
                                     },
                                     navigationIcon = {
                                         IconButton(onClick = {
@@ -183,8 +232,8 @@ class MainActivity : ComponentActivity() {
                             ) {
                                 composable("login") {
                                     LoginScreen(
-                                        onLoginClick = { 
-                                            navController.navigate("next_draws") {
+                                        onLoginClick = {
+                                            navController.navigate("dashboard") {
                                                 popUpTo("login") { inclusive = true }
                                             }
                                         },
@@ -197,8 +246,12 @@ class MainActivity : ComponentActivity() {
                                         onBackToLoginClick = { navController.popBackStack() }
                                     )
                                 }
+                                composable("dashboard") { DashboardScreen() }
                                 composable("profile") { ProfileScreen() }
                                 composable("next_draws") { NextDrawScreen() }
+
+                                composable("history") { HistoryScreen() }
+
                                 composable("raffle_registration") { RaffleRegistrationScreen() }
                             }
                         }

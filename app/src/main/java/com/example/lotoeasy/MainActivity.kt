@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
@@ -26,6 +27,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.lotoeasy.ui.screens.LoginScreen
 import com.example.lotoeasy.ui.screens.NextDrawScreen
 import com.example.lotoeasy.ui.screens.ProfileScreen
+import com.example.lotoeasy.ui.screens.RaffleRegistrationScreen
 import com.example.lotoeasy.ui.screens.RegisterScreen
 import com.example.lotoeasy.ui.theme.LotoOrange
 import com.example.lotoeasy.ui.theme.LotoeasyTheme
@@ -73,8 +75,30 @@ class MainActivity : ComponentActivity() {
                                 colors = NavigationDrawerItemDefaults.colors(
                                     selectedIconColor = LotoOrange,
                                     selectedTextColor = LotoOrange,
+                                    selectedContainerColor = LotoOrange.copy(alpha = 0.1f),
                                     unselectedIconColor = Color.Gray,
-                                    unselectedTextColor = Color.Gray
+                                    unselectedTextColor = Color.Gray,
+                                    unselectedContainerColor = Color.Transparent
+                                )
+                            )
+                            NavigationDrawerItem(
+                                icon = { Icon(Icons.Default.Add, null) },
+                                label = { Text("Cadastrar Talão") },
+                                selected = currentRoute == "raffle_registration",
+                                onClick = {
+                                    navController.navigate("raffle_registration") {
+                                        launchSingleTop = true
+                                    }
+                                    scope.launch { drawerState.close() }
+                                },
+                                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
+                                colors = NavigationDrawerItemDefaults.colors(
+                                    selectedIconColor = LotoOrange,
+                                    selectedTextColor = LotoOrange,
+                                    selectedContainerColor = LotoOrange.copy(alpha = 0.1f),
+                                    unselectedIconColor = Color.Gray,
+                                    unselectedTextColor = Color.Gray,
+                                    unselectedContainerColor = Color.Transparent
                                 )
                             )
                             NavigationDrawerItem(
@@ -91,8 +115,10 @@ class MainActivity : ComponentActivity() {
                                 colors = NavigationDrawerItemDefaults.colors(
                                     selectedIconColor = LotoOrange,
                                     selectedTextColor = LotoOrange,
+                                    selectedContainerColor = LotoOrange.copy(alpha = 0.1f),
                                     unselectedIconColor = Color.Gray,
-                                    unselectedTextColor = Color.Gray
+                                    unselectedTextColor = Color.Gray,
+                                    unselectedContainerColor = Color.Transparent
                                 )
                             )
                             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
@@ -123,6 +149,7 @@ class MainActivity : ComponentActivity() {
                                         Text(
                                             when(currentRoute) {
                                                 "next_draws" -> "Sorteios"
+                                                "raffle_registration" -> "Cadastrar Talão"
                                                 "profile" -> "Meu Perfil"
                                                 else -> "Loto-Easy"
                                             }
@@ -136,7 +163,7 @@ class MainActivity : ComponentActivity() {
                                         }
                                     },
                                     colors = TopAppBarDefaults.topAppBarColors(
-                                        containerColor = Color(0xFFFFF2EC),
+                                        containerColor = LotoOrange.copy(alpha = 0.08f),
                                         titleContentColor = LotoOrange,
                                         navigationIconContentColor = LotoOrange
                                     )
@@ -172,6 +199,7 @@ class MainActivity : ComponentActivity() {
                                 }
                                 composable("profile") { ProfileScreen() }
                                 composable("next_draws") { NextDrawScreen() }
+                                composable("raffle_registration") { RaffleRegistrationScreen() }
                             }
                         }
                     }

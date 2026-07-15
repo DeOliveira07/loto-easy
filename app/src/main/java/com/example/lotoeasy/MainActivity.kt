@@ -1,6 +1,7 @@
 package com.example.lotoeasy
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Spacer
@@ -16,23 +17,27 @@ import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.lotoeasy.db.fb.FBDatabase
+import com.example.lotoeasy.ui.screens.DashboardScreen
+import com.example.lotoeasy.ui.screens.HistoryScreen
 import com.example.lotoeasy.ui.screens.LoginScreen
 import com.example.lotoeasy.ui.screens.NextDrawScreen
 import com.example.lotoeasy.ui.screens.ProfileScreen
 import com.example.lotoeasy.ui.screens.RaffleRegistrationScreen
 import com.example.lotoeasy.ui.screens.RegisterScreen
-import com.example.lotoeasy.ui.screens.DashboardScreen
-import com.example.lotoeasy.ui.screens.HistoryScreen // 💡 Tela de Histórico
 import com.example.lotoeasy.ui.theme.LotoOrange
 import com.example.lotoeasy.ui.theme.LotoeasyTheme
 import kotlinx.coroutines.launch
@@ -43,9 +48,16 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             LotoeasyTheme {
+                val fbDB = remember { FBDatabase() }
+                val viewModel: MainViewModel = viewModel(
+                    factory = MainViewModelFactory(fbDB)
+                )
+
                 val navController = rememberNavController()
                 val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
                 val scope = rememberCoroutineScope()
+                val context = LocalContext.current
+
                 val navBackStackEntry = navController.currentBackStackEntryAsState()
                 val currentRoute = navBackStackEntry.value?.destination?.route
 
@@ -58,9 +70,9 @@ class MainActivity : ComponentActivity() {
                         ModalDrawerSheet {
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
-                                "LOTO-EASY",
+                                text = if (viewModel.user != null) "Olá, ${viewModel.user?.name}" else "LOTO-EASY",
                                 modifier = Modifier.padding(16.dp),
-                                fontSize = 24.sp,
+                                fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = LotoOrange
                             )
@@ -70,19 +82,14 @@ class MainActivity : ComponentActivity() {
                                 label = { Text("Início") },
                                 selected = currentRoute == "dashboard",
                                 onClick = {
-                                    navController.navigate("dashboard") {
-                                        launchSingleTop = true
-                                    }
+                                    navController.navigate("dashboard") { launchSingleTop = true }
                                     scope.launch { drawerState.close() }
                                 },
                                 modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
                                 colors = NavigationDrawerItemDefaults.colors(
                                     selectedIconColor = LotoOrange,
                                     selectedTextColor = LotoOrange,
-                                    selectedContainerColor = LotoOrange.copy(alpha = 0.1f),
-                                    unselectedIconColor = Color.Gray,
-                                    unselectedTextColor = Color.Gray,
-                                    unselectedContainerColor = Color.Transparent
+                                    selectedContainerColor = LotoOrange.copy(alpha = 0.1f)
                                 )
                             )
 
@@ -91,19 +98,14 @@ class MainActivity : ComponentActivity() {
                                 label = { Text("Próximos Sorteios") },
                                 selected = currentRoute == "next_draws",
                                 onClick = {
-                                    navController.navigate("next_draws") {
-                                        launchSingleTop = true
-                                    }
+                                    navController.navigate("next_draws") { launchSingleTop = true }
                                     scope.launch { drawerState.close() }
                                 },
                                 modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
                                 colors = NavigationDrawerItemDefaults.colors(
                                     selectedIconColor = LotoOrange,
                                     selectedTextColor = LotoOrange,
-                                    selectedContainerColor = LotoOrange.copy(alpha = 0.1f),
-                                    unselectedIconColor = Color.Gray,
-                                    unselectedTextColor = Color.Gray,
-                                    unselectedContainerColor = Color.Transparent
+                                    selectedContainerColor = LotoOrange.copy(alpha = 0.1f)
                                 )
                             )
 
@@ -112,19 +114,14 @@ class MainActivity : ComponentActivity() {
                                 label = { Text("Histórico de Registros") },
                                 selected = currentRoute == "history",
                                 onClick = {
-                                    navController.navigate("history") {
-                                        launchSingleTop = true
-                                    }
+                                    navController.navigate("history") { launchSingleTop = true }
                                     scope.launch { drawerState.close() }
                                 },
                                 modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
                                 colors = NavigationDrawerItemDefaults.colors(
                                     selectedIconColor = LotoOrange,
                                     selectedTextColor = LotoOrange,
-                                    selectedContainerColor = LotoOrange.copy(alpha = 0.1f),
-                                    unselectedIconColor = Color.Gray,
-                                    unselectedTextColor = Color.Gray,
-                                    unselectedContainerColor = Color.Transparent
+                                    selectedContainerColor = LotoOrange.copy(alpha = 0.1f)
                                 )
                             )
 
@@ -133,42 +130,35 @@ class MainActivity : ComponentActivity() {
                                 label = { Text("Cadastrar Talão") },
                                 selected = currentRoute == "raffle_registration",
                                 onClick = {
-                                    navController.navigate("raffle_registration") {
-                                        launchSingleTop = true
-                                    }
+                                    navController.navigate("raffle_registration") { launchSingleTop = true }
                                     scope.launch { drawerState.close() }
                                 },
                                 modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
                                 colors = NavigationDrawerItemDefaults.colors(
                                     selectedIconColor = LotoOrange,
                                     selectedTextColor = LotoOrange,
-                                    selectedContainerColor = LotoOrange.copy(alpha = 0.1f),
-                                    unselectedIconColor = Color.Gray,
-                                    unselectedTextColor = Color.Gray,
-                                    unselectedContainerColor = Color.Transparent
+                                    selectedContainerColor = LotoOrange.copy(alpha = 0.1f)
                                 )
                             )
+
                             NavigationDrawerItem(
                                 icon = { Icon(Icons.Default.AccountCircle, null) },
                                 label = { Text("Meu Perfil") },
                                 selected = currentRoute == "profile",
                                 onClick = {
-                                    navController.navigate("profile") {
-                                        launchSingleTop = true
-                                    }
+                                    navController.navigate("profile") { launchSingleTop = true }
                                     scope.launch { drawerState.close() }
                                 },
                                 modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
                                 colors = NavigationDrawerItemDefaults.colors(
                                     selectedIconColor = LotoOrange,
                                     selectedTextColor = LotoOrange,
-                                    selectedContainerColor = LotoOrange.copy(alpha = 0.1f),
-                                    unselectedIconColor = Color.Gray,
-                                    unselectedTextColor = Color.Gray,
-                                    unselectedContainerColor = Color.Transparent
+                                    selectedContainerColor = LotoOrange.copy(alpha = 0.1f)
                                 )
                             )
+
                             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
                             NavigationDrawerItem(
                                 icon = { Icon(Icons.AutoMirrored.Filled.ExitToApp, null) },
                                 label = { Text("Sair") },
@@ -179,11 +169,7 @@ class MainActivity : ComponentActivity() {
                                     }
                                     scope.launch { drawerState.close() }
                                 },
-                                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
-                                colors = NavigationDrawerItemDefaults.colors(
-                                    unselectedIconColor = Color.Gray,
-                                    unselectedTextColor = Color.Gray
-                                )
+                                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                             )
                         }
                     }
@@ -194,7 +180,7 @@ class MainActivity : ComponentActivity() {
                                 TopAppBar(
                                     title = {
                                         Text(
-                                            when(currentRoute) {
+                                            when (currentRoute) {
                                                 "dashboard" -> "Início"
                                                 "next_draws" -> "Sorteios"
                                                 "history" -> "Histórico de Registros"
@@ -240,18 +226,29 @@ class MainActivity : ComponentActivity() {
                                         onRegisterClick = { navController.navigate("register") }
                                     )
                                 }
+
                                 composable("register") {
                                     RegisterScreen(
-                                        onRegisterClick = { navController.popBackStack() },
+                                        onRegisterClick = { name, email, password ->
+                                            viewModel.register(name, email, password) { success, error ->
+                                                if (success) {
+                                                    Toast.makeText(context, "Registro OK!", Toast.LENGTH_LONG).show()
+                                                    navController.navigate("dashboard") {
+                                                        popUpTo("login") { inclusive = true }
+                                                    }
+                                                } else {
+                                                    Toast.makeText(context, "Registro FALHOU: $error", Toast.LENGTH_LONG).show()
+                                                }
+                                            }
+                                        },
                                         onBackToLoginClick = { navController.popBackStack() }
                                     )
                                 }
+
                                 composable("dashboard") { DashboardScreen() }
                                 composable("profile") { ProfileScreen() }
                                 composable("next_draws") { NextDrawScreen() }
-
                                 composable("history") { HistoryScreen() }
-
                                 composable("raffle_registration") { RaffleRegistrationScreen() }
                             }
                         }

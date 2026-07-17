@@ -218,9 +218,16 @@ class MainActivity : ComponentActivity() {
                             ) {
                                 composable("login") {
                                     LoginScreen(
-                                        onLoginClick = {
-                                            navController.navigate("dashboard") {
-                                                popUpTo("login") { inclusive = true }
+                                        onLoginClick = { email, password ->
+                                            viewModel.login(email, password) { success, error ->
+                                                if (success) {
+                                                    Toast.makeText(context, "Bem-vindo!", Toast.LENGTH_SHORT).show()
+                                                    navController.navigate("dashboard") {
+                                                        popUpTo("login") { inclusive = true }
+                                                    }
+                                                } else {
+                                                    Toast.makeText(context, "Falha no login: $error", Toast.LENGTH_LONG).show()
+                                                }
                                             }
                                         },
                                         onRegisterClick = { navController.navigate("register") }
@@ -244,8 +251,7 @@ class MainActivity : ComponentActivity() {
                                         onBackToLoginClick = { navController.popBackStack() }
                                     )
                                 }
-
-                                composable("dashboard") { DashboardScreen() }
+                                composable("dashboard") { DashboardScreen(viewModel = viewModel) }
                                 composable("profile") { ProfileScreen() }
                                 composable("next_draws") { NextDrawScreen() }
                                 composable("history") { HistoryScreen() }

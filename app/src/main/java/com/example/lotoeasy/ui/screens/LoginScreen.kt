@@ -19,18 +19,17 @@ import com.example.lotoeasy.ui.theme.LotoOrange
 @Composable
 fun LoginScreen(
     modifier: Modifier = Modifier,
-    onLoginClick: () -> Unit = {},
+    onLoginClick: (String, String) -> Unit = { _, _ -> },
     onRegisterClick: () -> Unit = {}
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
-    /*val backgroundColor = Color(0xFF1A1A1A) modo dark ideia para mudar com escolha do usuario*/
     val backgroundColor = BackgroundWhite
     val primaryWhite = LotoOrange
 
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .background(backgroundColor)
             .padding(24.dp),
@@ -96,9 +95,10 @@ fun LoginScreen(
         )
 
         Button(
-            onClick = onLoginClick,
+            onClick = { onLoginClick(email, password) }, // Envia email e senha digitados
             colors = ButtonDefaults.buttonColors(containerColor = primaryWhite),
             shape = RoundedCornerShape(12.dp),
+            enabled = email.isNotBlank() && password.isNotBlank(),
             modifier = Modifier
                 .fillMaxWidth()
                 .height(50.dp)

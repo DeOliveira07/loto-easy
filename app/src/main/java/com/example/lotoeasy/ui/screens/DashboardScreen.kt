@@ -69,7 +69,7 @@ fun DashboardScreen(modifier: Modifier = Modifier, viewModel: MainViewModel) {
             Spacer(modifier = Modifier.width(12.dp))
             DashboardMetricCard(
                 title = "Total de Talões",
-                value = "27", // Fixo por enquanto
+                value = viewModel.taloes.size.toString(),
                 icon = Icons.Default.CardMembership,
                 brush = Brush.linearGradient(listOf(Color(0xFFFF9100), Color(0xFFFFAA33))),
                 modifier = Modifier.weight(1f)

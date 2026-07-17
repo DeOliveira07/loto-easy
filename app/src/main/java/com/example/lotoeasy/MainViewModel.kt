@@ -7,7 +7,9 @@ import com.example.lotoeasy.api.LotomaniaResponse
 import com.example.lotoeasy.api.RetrofitClient
 import com.example.lotoeasy.db.fb.FBDatabase
 import com.example.lotoeasy.db.fb.FBUser
+import com.example.lotoeasy.db.fb.toFBTalao
 import com.example.lotoeasy.db.fb.toFBUser
+import com.example.lotoeasy.model.Talao
 import com.example.lotoeasy.model.User
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
@@ -20,17 +22,19 @@ class MainViewModel(private val db: FBDatabase) : ViewModel(), FBDatabase.Listen
     private val _user = mutableStateOf<User?>(null)
     val user: User? get() = _user.value
 
-    // Estado da Lotomania (guarda o último concurso baixado)
     private val _lotomaniaState = mutableStateOf<LotomaniaResponse?>(null)
     val lotomaniaState: LotomaniaResponse? get() = _lotomaniaState.value
 
-    // Estado de carregamento da API
     private val _isLoadingLotomania = mutableStateOf(false)
     val isLoadingLotomania: Boolean get() = _isLoadingLotomania.value
 
+    private val _taloes = mutableStateOf<List<Talao>>(emptyList())
+    val taloes: List<Talao> get() = _taloes.value
+
     init {
         db.setListener(this)
-        fetchLotomania() // Busca os dados da Lotomania ao iniciar
+        fetchLotomania()
+        carregarTaloes()
     }
 
     fun fetchLotomania() {
@@ -45,9 +49,38 @@ class MainViewModel(private val db: FBDatabase) : ViewModel(), FBDatabase.Listen
 
             override fun onFailure(call: Call<LotomaniaResponse>, t: Throwable) {
                 _isLoadingLotomania.value = false
-                // Tratamento de falha de conexão silenciada ou logada
             }
         })
+    }
+
+    fun carregarTaloes() {
+        db.escutarTaloes { listaFB ->
+            _taloes.value = listaFB.map { it.toTalao() }
+        }
+    }
+
+    fun cadastrarTalao(
+        titulo: String,
+        concurso: String,
+        data: String,
+        numeros: List<Int>,
+        onResult: (Boolean, String?) -> Unit
+    ) {
+        if (numeros.isEmpty()) {
+            onResult(false, "Selecione pelo menos um número!")
+            return
+        }
+
+        val novoTalao = Talao(
+            titulo = if (titulo.isBlank()) "Talão Concurso $concurso" else titulo,
+            concurso = concurso,
+            data = data,
+            numerosApostados = numeros
+        )
+
+        db.salvarTalao(novoTalao.toFBTalao()) { success, error ->
+            onResult(success, error)
+        }
     }
 
     fun login(email: String, password: String, onResult: (Boolean, String?) -> Unit) {

@@ -1,5 +1,6 @@
 package com.example.lotoeasy.ui.screens
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -17,20 +18,24 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.lotoeasy.MainViewModel
 import com.example.lotoeasy.ui.theme.BackgroundWhite
 import com.example.lotoeasy.ui.theme.LotoOrange
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun RaffleRegistrationScreen(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    viewModel: MainViewModel
 ) {
+    val context = LocalContext.current
     var selectedNumbers by remember { mutableStateOf(setOf<Int>()) }
     var raffleName by remember { mutableStateOf("") }
     var concurso by remember { mutableStateOf("") }
@@ -46,7 +51,7 @@ fun RaffleRegistrationScreen(
             .verticalScroll(scrollState)
             .padding(16.dp)
     ) {
-        // Cabeçalho (Padrão NextDrawsScreen)
+        // Cabeçalho
         Text(
             text = "Cadastro de Talão",
             fontSize = 22.sp,
@@ -60,7 +65,6 @@ fun RaffleRegistrationScreen(
             modifier = Modifier.padding(top = 4.dp, bottom = 24.dp)
         )
 
-        // Formulário em um Card para seguir o padrão de seções
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
@@ -126,7 +130,6 @@ fun RaffleRegistrationScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Info de seleção e Ações
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -158,8 +161,27 @@ fun RaffleRegistrationScreen(
                     Icon(Icons.Default.Delete, contentDescription = "Limpar", tint = Color.Gray)
                 }
 
+                // Botão de Salvar integrado ao ViewModel e Firestore
                 Button(
-                    onClick = { /* Lógica de Salvar */ },
+                    onClick = {
+                        viewModel.cadastrarTalao(
+                            titulo = raffleName,
+                            concurso = concurso,
+                            data = drawDate,
+                            numeros = selectedNumbers.toList()
+                        ) { success, error ->
+                            if (success) {
+                                Toast.makeText(context, "Talão salvo com sucesso!", Toast.LENGTH_SHORT).show()
+                                // Limpa a tela
+                                selectedNumbers = emptySet()
+                                raffleName = ""
+                                concurso = ""
+                                drawDate = ""
+                            } else {
+                                Toast.makeText(context, "Erro ao salvar: $error", Toast.LENGTH_LONG).show()
+                            }
+                        }
+                    },
                     colors = ButtonDefaults.buttonColors(containerColor = LotoOrange),
                     shape = RoundedCornerShape(12.dp)
                 ) {
@@ -172,7 +194,6 @@ fun RaffleRegistrationScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Grade de Números (10x10)
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -231,7 +252,7 @@ fun RaffleRegistrationScreen(
                 }
             }
         }
-        
+
         Spacer(modifier = Modifier.height(32.dp))
     }
 }

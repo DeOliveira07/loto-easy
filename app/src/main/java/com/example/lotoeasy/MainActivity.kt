@@ -20,7 +20,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -251,11 +250,12 @@ class MainActivity : ComponentActivity() {
                                         onBackToLoginClick = { navController.popBackStack() }
                                     )
                                 }
+
                                 composable("dashboard") { DashboardScreen(viewModel = viewModel) }
                                 composable("profile") { ProfileScreen() }
                                 composable("next_draws") { NextDrawScreen() }
-                                composable("history") { HistoryScreen() }
-                                composable("raffle_registration") { RaffleRegistrationScreen() }
+                                composable("history") { HistoryScreen(viewModel = viewModel) }
+                                composable("raffle_registration") { RaffleRegistrationScreen(viewModel = viewModel) }
                             }
                         }
                     }

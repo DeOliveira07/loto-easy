@@ -18,8 +18,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.lotoeasy.MainViewModel
 import com.example.lotoeasy.ui.theme.BackgroundWhite
 import com.example.lotoeasy.ui.theme.LotoOrange
+import java.text.NumberFormat
+import java.util.Locale
 
 // Modelo de Dados
 data class Sorteio(
@@ -30,19 +33,51 @@ data class Sorteio(
     val status: String
 )
 
-val sorteiosMock = listOf(
-    Sorteio("2850", "2026-05-10", "20:00", "R$ 3.500.000,00", "Em breve"),
-    Sorteio("2851", "2026-05-13", "20:00", "R$ 4.200.000,00", "Pendente"),
-    Sorteio("2852", "2026-05-15", "20:00", "R$ 2.800.000,00", "Pendente"),
-    Sorteio("2853", "2026-05-17", "20:00", "R$ 5.100.000,00", "Pendente"),
-    Sorteio("2854", "2026-05-20", "20:00", "R$ 3.900.000,00", "Pendente")
-)
-
 @Composable
 fun NextDrawScreen(
+    viewModel: MainViewModel,
     modifier: Modifier = Modifier
 ) {
     val scrollState = rememberScrollState()
+    val lotomaniaData = viewModel.lotomaniaState
+    val isLoading = viewModel.isLoadingLotomania
+
+    val listaSorteios = if (lotomaniaData != null) {
+        val ultimoConcursoNum = lotomaniaData.numero ?: 0
+        val proximoConcursoNum = ultimoConcursoNum + 1
+
+        val valorEstimado = lotomaniaData.valorEstimadoProximoConcurso ?: 0.0
+        val ptBr = Locale("pt", "BR")
+        val premioFormatado = NumberFormat.getCurrencyInstance(ptBr).format(valorEstimado)
+
+        val dataProximo = lotomaniaData.dataProximoConcurso ?: "A definir"
+
+        listOf(
+            Sorteio(
+                concurso = proximoConcursoNum.toString(),
+                data = dataProximo,
+                horario = "20:00",
+                premio = premioFormatado,
+                status = "Em breve"
+            ),
+            Sorteio(
+                concurso = (proximoConcursoNum + 1).toString(),
+                data = "A definir",
+                horario = "20:00",
+                premio = "A estimar",
+                status = "Pendente"
+            ),
+            Sorteio(
+                concurso = (proximoConcursoNum + 2).toString(),
+                data = "A definir",
+                horario = "20:00",
+                premio = "A estimar",
+                status = "Pendente"
+            )
+        )
+    } else {
+        emptyList()
+    }
 
     Column(
         modifier = modifier
@@ -59,21 +94,39 @@ fun NextDrawScreen(
             color = Color(0xFF333333)
         )
         Text(
-            text = "Fique por dentro dos próximos sorteios e não perca oportunidades!",
+            text = "Fique por dentro dos próximos sorteios oficiais da Caixa!",
             fontSize = 14.sp,
             color = Color.Gray,
             modifier = Modifier.padding(top = 4.dp, bottom = 24.dp)
         )
 
-        // Lista de Cards
-        sorteiosMock.forEach { sorteio ->
-            SorteioCard(sorteio)
-            Spacer(modifier = Modifier.height(12.dp))
+        if (isLoading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = LotoOrange)
+            }
+        } else if (listaSorteios.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 32.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("Não foi possível carregar os dados dos sorteios no momento.")
+            }
+        } else {
+            listaSorteios.forEach { sorteio ->
+                SorteioCard(sorteio)
+                Spacer(modifier = Modifier.height(12.dp))
+            }
         }
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Seção Sobre a Lotomania
         AboutLotomaniaSection()
     }
 }
@@ -92,7 +145,6 @@ fun SorteioCard(sorteio: Sorteio) {
                 .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Ícone de Calendário com Gradiente
             Box(
                 modifier = Modifier
                     .size(48.dp)
@@ -120,8 +172,7 @@ fun SorteioCard(sorteio: Sorteio) {
                         fontSize = 16.sp
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    
-                    // Badge de Status
+
                     Surface(
                         color = when (sorteio.status) {
                             "Hoje" -> Color(0xFFDC2626)
@@ -138,7 +189,7 @@ fun SorteioCard(sorteio: Sorteio) {
                         )
                     }
                 }
-                
+
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(top = 4.dp)
@@ -150,7 +201,7 @@ fun SorteioCard(sorteio: Sorteio) {
                         modifier = Modifier.size(14.dp)
                     )
                     Text(
-                        text = " ${sorteio.horario}",
+                        text = " Data: ${sorteio.data} às ${sorteio.horario}",
                         fontSize = 12.sp,
                         color = Color.Gray
                     )
@@ -158,12 +209,12 @@ fun SorteioCard(sorteio: Sorteio) {
             }
 
             Column(horizontalAlignment = Alignment.End) {
-                Text(text = "Prêmio", fontSize = 11.sp, color = Color.Gray)
+                Text(text = "Prêmio Estimado", fontSize = 10.sp, color = Color.Gray)
                 Text(
                     text = sorteio.premio,
                     color = LotoOrange,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp
+                    fontSize = 13.sp
                 )
             }
         }
@@ -195,7 +246,7 @@ fun AboutLotomaniaSection() {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                InfoBox(label = "Sorteios", value = "Ter, Qui e Sáb", modifier = Modifier.weight(1f))
+                InfoBox(label = "Sorteios", value = "Seg, Quar e Sáb", modifier = Modifier.weight(1f))
                 InfoBox(label = "Horário", value = "20:00h", modifier = Modifier.weight(1f))
                 InfoBox(label = "Números", value = "20 dezenas", modifier = Modifier.weight(1f))
             }

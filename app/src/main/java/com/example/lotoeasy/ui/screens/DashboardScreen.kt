@@ -29,14 +29,26 @@ import java.util.Locale
 fun DashboardScreen(modifier: Modifier = Modifier, viewModel: MainViewModel) {
     val scrollState = rememberScrollState()
 
-    // 1. Lendo os estados do ViewModel
     val lotomania = viewModel.lotomaniaState
     val isLoading = viewModel.isLoadingLotomania
+    val taloes = viewModel.taloes
 
-    // Formatação de Moeda (Ex: R$ 3.500.000,00)
     val currencyFormat = NumberFormat.getCurrencyInstance(Locale.Builder().setLanguage("pt").setRegion("BR").build())
     val valorProximoPremio = lotomania?.valorEstimadoProximoConcurso?.let { currencyFormat.format(it) } ?: "R$ --"
     val dataProximoSorteio = lotomania?.dataProximoConcurso ?: "--/--/----"
+
+    val concursoOficialAtual = lotomania?.numero?.toString() ?: ""
+    val dezenasSorteadas = lotomania?.listaDezenas?.mapNotNull { it.toIntOrNull() } ?: emptyList()
+
+    val taloesApurados = taloes.filter { it.concurso == concursoOficialAtual }
+
+    val taloesGanhadores = taloesApurados.filter { talao ->
+        val acertos = talao.numerosApostados.count { it in dezenasSorteadas }
+        acertos >= 15 || (dezenasSorteadas.isNotEmpty() && acertos == 0)
+    }
+
+    val totalGanhos = taloesGanhadores.size.toString()
+    val melhorPremioTexto = if (taloesGanhadores.isNotEmpty()) "Premiado!" else "R$ 0,00"
 
     Column(
         modifier = modifier
@@ -61,7 +73,7 @@ fun DashboardScreen(modifier: Modifier = Modifier, viewModel: MainViewModel) {
         Row(modifier = Modifier.fillMaxWidth()) {
             DashboardMetricCard(
                 title = "Sorteios Ganhos",
-                value = "3", // Fixo por enquanto
+                value = if (isLoading) "..." else totalGanhos,
                 icon = Icons.Default.Leaderboard,
                 brush = Brush.linearGradient(listOf(LotoOrange, Color(0xFFFA7E4B))),
                 modifier = Modifier.weight(1f)
@@ -69,7 +81,7 @@ fun DashboardScreen(modifier: Modifier = Modifier, viewModel: MainViewModel) {
             Spacer(modifier = Modifier.width(12.dp))
             DashboardMetricCard(
                 title = "Total de Talões",
-                value = viewModel.taloes.size.toString(),
+                value = taloes.size.toString(),
                 icon = Icons.Default.CardMembership,
                 brush = Brush.linearGradient(listOf(Color(0xFFFF9100), Color(0xFFFFAA33))),
                 modifier = Modifier.weight(1f)
@@ -77,7 +89,6 @@ fun DashboardScreen(modifier: Modifier = Modifier, viewModel: MainViewModel) {
         }
         Spacer(modifier = Modifier.height(12.dp))
         Row(modifier = Modifier.fillMaxWidth()) {
-            // 2. Card do Próximo Sorteio com dados Dinâmicos da API!
             DashboardMetricCard(
                 title = "Próximo Sorteio",
                 value = if (isLoading) "..." else dataProximoSorteio,
@@ -88,7 +99,7 @@ fun DashboardScreen(modifier: Modifier = Modifier, viewModel: MainViewModel) {
             Spacer(modifier = Modifier.width(12.dp))
             DashboardMetricCard(
                 title = "Melhor Prêmio",
-                value = "R$ 1.250,00", // Fixo por enquanto
+                value = if (isLoading) "..." else melhorPremioTexto,
                 icon = Icons.AutoMirrored.Filled.TrendingUp,
                 brush = Brush.linearGradient(listOf(Color(0xFFC62828), Color(0xFFE53935))),
                 modifier = Modifier.weight(1f)
@@ -97,7 +108,6 @@ fun DashboardScreen(modifier: Modifier = Modifier, viewModel: MainViewModel) {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Seção: Últimos Resultados (Mostrando o último real da API)
         Text(
             text = "Último Resultado (Oficial)",
             fontSize = 18.sp,
@@ -115,15 +125,17 @@ fun DashboardScreen(modifier: Modifier = Modifier, viewModel: MainViewModel) {
                 if (isLoading) {
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
                 } else if (lotomania != null) {
-                    // Exibe o último concurso que acabou de acontecer
+                    val maiorAcertoNoConcurso = taloesApurados.maxOfOrNull { talao ->
+                        talao.numerosApostados.count { it in dezenasSorteadas }
+                    }
+
                     ResultRow(
                         concurso = "Concurso ${lotomania.numero}",
                         data = lotomania.dataApuracao ?: "",
-                        acertos = "?", // Depois faremos a lógica de conferência
-                        ganhou = false
+                        acertos = if (maiorAcertoNoConcurso != null) "$maiorAcertoNoConcurso acertos" else "Sem apostas",
+                        ganhou = taloesGanhadores.isNotEmpty()
                     )
 
-                    // Mostra algumas das dezenas sorteadas
                     Text(
                         text = "Dezenas: ${lotomania.listaDezenas?.joinToString(" - ")}",
                         fontSize = 12.sp,
@@ -155,7 +167,6 @@ fun DashboardScreen(modifier: Modifier = Modifier, viewModel: MainViewModel) {
                 if (isLoading) {
                     Text("Carregando...", color = Color.Gray)
                 } else if (lotomania != null) {
-                    // 3. Linha do próximo sorteio alimentada pela API!
                     NextDrawRow(
                         concurso = "Concurso ${lotomania.numeroConcursoProximo ?: (lotomania.numero?.plus(1))}",
                         data = dataProximoSorteio,
@@ -201,7 +212,7 @@ fun ResultRow(concurso: String, data: String, acertos: String, ganhou: Boolean) 
         }
         Column(horizontalAlignment = Alignment.End) {
             Text(text = acertos, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = if (ganhou) Color(0xFF2E7D32) else Color(0xFFC62828))
-            Text(text = if (ganhou) "Ganhou!" else "Pendente", fontSize = 12.sp, fontWeight = FontWeight.Medium, color = if (ganhou) Color(0xFF2E7D32) else Color.Gray)
+            Text(text = if (ganhou) "Ganhou!" else "Apurado", fontSize = 12.sp, fontWeight = FontWeight.Medium, color = if (ganhou) Color(0xFF2E7D32) else Color.Gray)
         }
     }
 }

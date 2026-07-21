@@ -38,8 +38,17 @@ fun RaffleRegistrationScreen(
     val context = LocalContext.current
     var selectedNumbers by remember { mutableStateOf(setOf<Int>()) }
     var raffleName by remember { mutableStateOf("") }
-    var concurso by remember { mutableStateOf("") }
-    var drawDate by remember { mutableStateOf("") }
+    val lotomaniaData = viewModel.lotomaniaState
+
+    val ultimoConcursoNum = lotomaniaData?.numero ?: 0
+    val proximoConcursoNum = if (ultimoConcursoNum > 0) ultimoConcursoNum + 1 else 0
+    val dataProximo = lotomaniaData?.dataProximoConcurso ?: "A definir"
+    val dataUltimo = lotomaniaData?.dataApuracao ?: "A definir"
+
+    var selectedOptionIndex by remember { mutableIntStateOf(1) } // Default: Próximo Concurso
+
+    val concurso = if (selectedOptionIndex == 0) ultimoConcursoNum.toString() else proximoConcursoNum.toString()
+    val drawDate = if (selectedOptionIndex == 0) dataUltimo else dataProximo
 
     val scrollState = rememberScrollState()
     val numbers = (1..100).toList()
@@ -88,43 +97,69 @@ fun RaffleRegistrationScreen(
                     )
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-                OutlinedTextField(
-                    value = concurso,
-                    onValueChange = { concurso = it },
-                    label = { Text("Número do Concurso") },
-                    placeholder = { Text("Ex: 2850") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = LotoOrange,
-                        unfocusedBorderColor = Color.Gray,
-                        focusedLabelColor = LotoOrange,
-                        unfocusedLabelColor = Color.Gray,
-                        cursorColor = LotoOrange
-                    )
+                Text(
+                    text = "Selecione o Concurso Oficial:",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.Gray,
+                    modifier = Modifier.padding(bottom = 8.dp)
                 )
 
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    FilterChip(
+                        selected = selectedOptionIndex == 1,
+                        onClick = { selectedOptionIndex = 1 },
+                        label = { Text("Próximo ($proximoConcursoNum)") },
+                        modifier = Modifier.weight(1f),
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = LotoOrange,
+                            selectedLabelColor = Color.White
+                        )
+                    )
+                    FilterChip(
+                        selected = selectedOptionIndex == 0,
+                        onClick = { selectedOptionIndex = 0 },
+                        label = { Text("Anterior ($ultimoConcursoNum)") },
+                        modifier = Modifier.weight(1f),
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = LotoOrange,
+                            selectedLabelColor = Color.White
+                        )
+                    )
+                }
+
                 Spacer(modifier = Modifier.height(12.dp))
 
-                OutlinedTextField(
-                    value = drawDate,
-                    onValueChange = { drawDate = it },
-                    label = { Text("Data do Resultado") },
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    leadingIcon = {
-                        Icon(Icons.Default.CalendarToday, contentDescription = null, tint = Color.Gray)
-                    },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = LotoOrange,
-                        unfocusedBorderColor = Color.Gray,
-                        focusedLabelColor = LotoOrange,
-                        unfocusedLabelColor = Color.Gray,
-                        cursorColor = LotoOrange
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = concurso,
+                        onValueChange = {},
+                        enabled = false,
+                        label = { Text("Concurso") },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp)
                     )
-                )
+
+                    OutlinedTextField(
+                        value = drawDate,
+                        onValueChange = {},
+                        enabled = false,
+                        label = { Text("Data Sorteio") },
+                        leadingIcon = {
+                            Icon(Icons.Default.CalendarToday, contentDescription = null, tint = Color.Gray)
+                        },
+                        modifier = Modifier.weight(1.2f),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                }
             }
         }
 
@@ -151,8 +186,6 @@ fun RaffleRegistrationScreen(
                     onClick = {
                         selectedNumbers = emptySet()
                         raffleName = ""
-                        concurso = ""
-                        drawDate = ""
                     },
                     colors = IconButtonDefaults.iconButtonColors(
                         containerColor = Color(0xFFF3F4F6)
@@ -161,9 +194,17 @@ fun RaffleRegistrationScreen(
                     Icon(Icons.Default.Delete, contentDescription = "Limpar", tint = Color.Gray)
                 }
 
-                // Botão de Salvar integrado ao ViewModel e Firestore
                 Button(
                     onClick = {
+                        if (raffleName.isBlank()) {
+                            Toast.makeText(context, "Por favor, dê um nome ao talão.", Toast.LENGTH_SHORT).show()
+                            return@Button
+                        }
+                        if (selectedNumbers.isEmpty()) {
+                            Toast.makeText(context, "Selecione ao menos um número.", Toast.LENGTH_SHORT).show()
+                            return@Button
+                        }
+
                         viewModel.cadastrarTalao(
                             titulo = raffleName,
                             concurso = concurso,
@@ -172,11 +213,8 @@ fun RaffleRegistrationScreen(
                         ) { success, error ->
                             if (success) {
                                 Toast.makeText(context, "Talão salvo com sucesso!", Toast.LENGTH_SHORT).show()
-                                // Limpa a tela
                                 selectedNumbers = emptySet()
                                 raffleName = ""
-                                concurso = ""
-                                drawDate = ""
                             } else {
                                 Toast.makeText(context, "Erro ao salvar: $error", Toast.LENGTH_LONG).show()
                             }
@@ -216,7 +254,6 @@ fun RaffleRegistrationScreen(
             }
         }
 
-        // Resumo dos números selecionados
         if (selectedNumbers.isNotEmpty()) {
             Spacer(modifier = Modifier.height(24.dp))
             Card(

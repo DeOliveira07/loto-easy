@@ -1,9 +1,13 @@
 package com.example.lotoeasy
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -24,11 +28,16 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import com.example.lotoeasy.db.fb.FBDatabase
 import com.example.lotoeasy.ui.screens.DashboardScreen
 import com.example.lotoeasy.ui.screens.HistoryScreen
@@ -40,11 +49,24 @@ import com.example.lotoeasy.ui.screens.RegisterScreen
 import com.example.lotoeasy.ui.theme.LotoOrange
 import com.example.lotoeasy.ui.theme.LotoeasyTheme
 import kotlinx.coroutines.launch
+import java.util.concurrent.TimeUnit
 
 class MainActivity : ComponentActivity() {
+
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            agendarNotificacaoLocal()
+        }
+    }
+
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        checarEAgendarNotificacao()
+
         setContent {
             LotoeasyTheme {
                 val fbDB = remember { FBDatabase() }
@@ -252,8 +274,8 @@ class MainActivity : ComponentActivity() {
                                 }
 
                                 composable("dashboard") { DashboardScreen(viewModel = viewModel) }
-                                composable("profile") { ProfileScreen() }
-                                composable("next_draws") { NextDrawScreen() }
+                                composable("profile") { ProfileScreen(viewModel = viewModel) }
+                                composable(route = "next_draws") { NextDrawScreen(viewModel = viewModel) }
                                 composable("history") { HistoryScreen(viewModel = viewModel) }
                                 composable("raffle_registration") { RaffleRegistrationScreen(viewModel = viewModel) }
                             }
@@ -262,5 +284,34 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    private fun checarEAgendarNotificacao() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) == PackageManager.PERMISSION_GRANTED
+            ) {
+                agendarNotificacaoLocal()
+            } else {
+                requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        } else {
+            agendarNotificacaoLocal()
+        }
+    }
+
+    private fun agendarNotificacaoLocal() {
+        // Disparo imediato para testar e ver a notificação funcionando
+        val testWork = OneTimeWorkRequestBuilder<SorteioNotificationWorker>().build()
+        WorkManager.getInstance(applicationContext).enqueue(testWork)
+
+        val workRequest = PeriodicWorkRequestBuilder<SorteioNotificationWorker>(24, TimeUnit.HOURS).build()
+        WorkManager.getInstance(applicationContext).enqueueUniquePeriodicWork(
+            "LotoEasyNotificationWork",
+            ExistingPeriodicWorkPolicy.KEEP,
+            workRequest
+        )
     }
 }

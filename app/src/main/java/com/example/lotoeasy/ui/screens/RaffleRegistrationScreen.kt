@@ -1,5 +1,6 @@
 package com.example.lotoeasy.ui.screens
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -17,24 +18,37 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.lotoeasy.MainViewModel
 import com.example.lotoeasy.ui.theme.BackgroundWhite
 import com.example.lotoeasy.ui.theme.LotoOrange
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun RaffleRegistrationScreen(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    viewModel: MainViewModel
 ) {
+    val context = LocalContext.current
     var selectedNumbers by remember { mutableStateOf(setOf<Int>()) }
     var raffleName by remember { mutableStateOf("") }
-    var concurso by remember { mutableStateOf("") }
-    var drawDate by remember { mutableStateOf("") }
+    val lotomaniaData = viewModel.lotomaniaState
+
+    val ultimoConcursoNum = lotomaniaData?.numero ?: 0
+    val proximoConcursoNum = if (ultimoConcursoNum > 0) ultimoConcursoNum + 1 else 0
+    val dataProximo = lotomaniaData?.dataProximoConcurso ?: "A definir"
+    val dataUltimo = lotomaniaData?.dataApuracao ?: "A definir"
+
+    var selectedOptionIndex by remember { mutableIntStateOf(1) } // Default: Próximo Concurso
+
+    val concurso = if (selectedOptionIndex == 0) ultimoConcursoNum.toString() else proximoConcursoNum.toString()
+    val drawDate = if (selectedOptionIndex == 0) dataUltimo else dataProximo
 
     val scrollState = rememberScrollState()
     val numbers = (1..100).toList()
@@ -46,7 +60,7 @@ fun RaffleRegistrationScreen(
             .verticalScroll(scrollState)
             .padding(16.dp)
     ) {
-        // Cabeçalho (Padrão NextDrawsScreen)
+        // Cabeçalho
         Text(
             text = "Cadastro de Talão",
             fontSize = 22.sp,
@@ -60,7 +74,6 @@ fun RaffleRegistrationScreen(
             modifier = Modifier.padding(top = 4.dp, bottom = 24.dp)
         )
 
-        // Formulário em um Card para seguir o padrão de seções
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
@@ -84,49 +97,74 @@ fun RaffleRegistrationScreen(
                     )
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-                OutlinedTextField(
-                    value = concurso,
-                    onValueChange = { concurso = it },
-                    label = { Text("Número do Concurso") },
-                    placeholder = { Text("Ex: 2850") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = LotoOrange,
-                        unfocusedBorderColor = Color.Gray,
-                        focusedLabelColor = LotoOrange,
-                        unfocusedLabelColor = Color.Gray,
-                        cursorColor = LotoOrange
-                    )
+                Text(
+                    text = "Selecione o Concurso Oficial:",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.Gray,
+                    modifier = Modifier.padding(bottom = 8.dp)
                 )
 
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    FilterChip(
+                        selected = selectedOptionIndex == 1,
+                        onClick = { selectedOptionIndex = 1 },
+                        label = { Text("Próximo ($proximoConcursoNum)") },
+                        modifier = Modifier.weight(1f),
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = LotoOrange,
+                            selectedLabelColor = Color.White
+                        )
+                    )
+                    FilterChip(
+                        selected = selectedOptionIndex == 0,
+                        onClick = { selectedOptionIndex = 0 },
+                        label = { Text("Anterior ($ultimoConcursoNum)") },
+                        modifier = Modifier.weight(1f),
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = LotoOrange,
+                            selectedLabelColor = Color.White
+                        )
+                    )
+                }
+
                 Spacer(modifier = Modifier.height(12.dp))
 
-                OutlinedTextField(
-                    value = drawDate,
-                    onValueChange = { drawDate = it },
-                    label = { Text("Data do Resultado") },
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    leadingIcon = {
-                        Icon(Icons.Default.CalendarToday, contentDescription = null, tint = Color.Gray)
-                    },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = LotoOrange,
-                        unfocusedBorderColor = Color.Gray,
-                        focusedLabelColor = LotoOrange,
-                        unfocusedLabelColor = Color.Gray,
-                        cursorColor = LotoOrange
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = concurso,
+                        onValueChange = {},
+                        enabled = false,
+                        label = { Text("Concurso") },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp)
                     )
-                )
+
+                    OutlinedTextField(
+                        value = drawDate,
+                        onValueChange = {},
+                        enabled = false,
+                        label = { Text("Data Sorteio") },
+                        leadingIcon = {
+                            Icon(Icons.Default.CalendarToday, contentDescription = null, tint = Color.Gray)
+                        },
+                        modifier = Modifier.weight(1.2f),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                }
             }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Info de seleção e Ações
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -148,8 +186,6 @@ fun RaffleRegistrationScreen(
                     onClick = {
                         selectedNumbers = emptySet()
                         raffleName = ""
-                        concurso = ""
-                        drawDate = ""
                     },
                     colors = IconButtonDefaults.iconButtonColors(
                         containerColor = Color(0xFFF3F4F6)
@@ -159,7 +195,31 @@ fun RaffleRegistrationScreen(
                 }
 
                 Button(
-                    onClick = { /* Lógica de Salvar */ },
+                    onClick = {
+                        if (raffleName.isBlank()) {
+                            Toast.makeText(context, "Por favor, dê um nome ao talão.", Toast.LENGTH_SHORT).show()
+                            return@Button
+                        }
+                        if (selectedNumbers.isEmpty()) {
+                            Toast.makeText(context, "Selecione ao menos um número.", Toast.LENGTH_SHORT).show()
+                            return@Button
+                        }
+
+                        viewModel.cadastrarTalao(
+                            titulo = raffleName,
+                            concurso = concurso,
+                            data = drawDate,
+                            numeros = selectedNumbers.toList()
+                        ) { success, error ->
+                            if (success) {
+                                Toast.makeText(context, "Talão salvo com sucesso!", Toast.LENGTH_SHORT).show()
+                                selectedNumbers = emptySet()
+                                raffleName = ""
+                            } else {
+                                Toast.makeText(context, "Erro ao salvar: $error", Toast.LENGTH_LONG).show()
+                            }
+                        }
+                    },
                     colors = ButtonDefaults.buttonColors(containerColor = LotoOrange),
                     shape = RoundedCornerShape(12.dp)
                 ) {
@@ -172,7 +232,6 @@ fun RaffleRegistrationScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Grade de Números (10x10)
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -195,7 +254,6 @@ fun RaffleRegistrationScreen(
             }
         }
 
-        // Resumo dos números selecionados
         if (selectedNumbers.isNotEmpty()) {
             Spacer(modifier = Modifier.height(24.dp))
             Card(
@@ -231,7 +289,7 @@ fun RaffleRegistrationScreen(
                 }
             }
         }
-        
+
         Spacer(modifier = Modifier.height(32.dp))
     }
 }

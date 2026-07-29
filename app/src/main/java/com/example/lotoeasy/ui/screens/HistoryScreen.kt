@@ -1,7 +1,6 @@
 package com.example.lotoeasy.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -17,57 +16,25 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.lotoeasy.MainViewModel
+import com.example.lotoeasy.model.Talao
 import com.example.lotoeasy.ui.theme.LotoOrange
 
-data class TalaoHistorico(
-    val id: String,
-    val titulo: String,
-    val data: String,
-    val acertos: Int,
-    val numerosApostados: List<Int>
-)
-
 @Composable
-fun HistoryScreen(modifier: Modifier = Modifier) {
+fun HistoryScreen(
+    modifier: Modifier = Modifier,
+    viewModel: MainViewModel
+) {
     val scrollState = rememberScrollState()
+    val taloes = viewModel.taloes
+    val lotomaniaData = viewModel.lotomaniaState
 
-    val historicoMock = remember {
-        listOf(
-            TalaoHistorico(
-                id = "001",
-                titulo = "Sorteio 001 - Maio 2026",
-                data = "07/05/2026",
-                acertos = 7,
-                numerosApostados = listOf(
-                    1, 3, 5, 7, 9, 11, 13, 15, 17, 19,
-                    21, 23, 25, 27, 29, 31, 33, 35, 37,
-                    39, 41, 43, 45, 47, 49, 51, 53, 55,
-                    57, 59, 61, 63, 65, 67, 69, 71, 73,
-                    75, 77, 79, 81, 83, 85, 87, 89, 91,
-                    93, 95, 97, 99
-                )
-            ),
-            TalaoHistorico(
-                id = "002",
-                titulo = "Sorteio 002 - Maio 2026",
-                data = "06/05/2026",
-                acertos = 5,
-                numerosApostados = listOf(2, 4, 6, 8, 10, 20, 30, 40, 50)
-            ),
-            TalaoHistorico(
-                id = "003",
-                titulo = "Sorteio 003 - Maio 2026",
-                data = "05/05/2026",
-                acertos = 8,
-                numerosApostados = listOf(5, 10, 15, 20, 25, 30, 35, 40, 45, 50)
-            )
-        )
-    }
+    val dezenasSorteadasOficiais = lotomaniaData?.listaDezenas?.mapNotNull { it.toIntOrNull() } ?: emptyList()
+    val concursoOficialAtual = lotomaniaData?.numero?.toString() ?: ""
 
     Column(
         modifier = modifier
@@ -84,22 +51,51 @@ fun HistoryScreen(modifier: Modifier = Modifier) {
             modifier = Modifier.padding(bottom = 20.dp)
         )
 
-        historicoMock.forEachIndexed { index, talao ->
-            var isExpanded by remember { mutableStateOf(index == 0) }
+        if (taloes.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 60.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "Nenhum talão cadastrado ainda.",
+                    color = Color.Gray,
+                    fontSize = 14.sp
+                )
+            }
+        } else {
+            taloes.forEachIndexed { index, talao ->
+                var isExpanded by remember { mutableStateOf(index == 0) }
 
-            HistoryCard(
-                talao = talao,
-                isExpanded = isExpanded,
-                onCardClick = { isExpanded = !isExpanded }
-            )
-            Spacer(modifier = Modifier.height(12.dp))
+                val jaApurado = talao.concurso == concursoOficialAtual
+                val dezenasSorteio = if (jaApurado) dezenasSorteadasOficiais else emptyList()
+                val acertosCalculados = if (jaApurado) {
+                    talao.numerosApostados.count { it in dezenasSorteio }
+                } else {
+                    talao.acertos
+                }
+
+                HistoryCard(
+                    talao = talao,
+                    acertosReais = acertosCalculados,
+                    jaApurado = jaApurado,
+                    dezenasSorteadas = dezenasSorteio,
+                    isExpanded = isExpanded,
+                    onCardClick = { isExpanded = !isExpanded }
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+            }
         }
     }
 }
 
 @Composable
 fun HistoryCard(
-    talao: TalaoHistorico,
+    talao: Talao,
+    acertosReais: Int,
+    jaApurado: Boolean,
+    dezenasSorteadas: List<Int>,
     isExpanded: Boolean,
     onCardClick: () -> Unit
 ) {
@@ -150,7 +146,7 @@ fun HistoryCard(
                             modifier = Modifier.size(12.dp)
                         )
                         Text(
-                            text = " ${talao.data}",
+                            text = " Concurso ${talao.concurso} • ${talao.data}",
                             fontSize = 11.sp,
                             color = Color.Gray
                         )
@@ -160,9 +156,9 @@ fun HistoryCard(
                 Column(horizontalAlignment = Alignment.End) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = "Acertos ",
+                            text = if (jaApurado) "Acertos " else "Pendente ",
                             fontSize = 12.sp,
-                            color = Color.Gray
+                            color = if (jaApurado) Color.Gray else LotoOrange
                         )
                         Icon(
                             imageVector = Icons.Default.Visibility,
@@ -172,10 +168,10 @@ fun HistoryCard(
                         )
                     }
                     Text(
-                        text = "${talao.acertos}",
+                        text = if (jaApurado) "$acertosReais" else "?",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
-                        color = LotoOrange,
+                        color = if (jaApurado && acertosReais >= 15) Color(0xFF16A34A) else LotoOrange,
                         modifier = Modifier.padding(top = 2.dp)
                     )
                 }
@@ -187,7 +183,7 @@ fun HistoryCard(
                     Spacer(modifier = Modifier.height(12.dp))
 
                     Text(
-                        text = "Números apostados:",
+                        text = "Números apostados (${talao.numerosApostados.size}):",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = Color(0xFF555555),
@@ -200,11 +196,14 @@ fun HistoryCard(
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                         verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        talao.numerosApostados.forEach { numero ->
+                        talao.numerosApostados.sorted().forEach { numero ->
+                            val foiSorteado = jaApurado && numero in dezenasSorteadas
+                            val corBola = if (foiSorteado) Color(0xFF16A34A) else Color(0xFF1D52D2)
+
                             Box(
                                 modifier = Modifier
                                     .size(26.dp)
-                                    .background(Color(0xFF1D52D2), shape = CircleShape),
+                                    .background(corBola, shape = CircleShape),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(

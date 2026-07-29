@@ -21,14 +21,20 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.lotoeasy.MainViewModel
 
 @Composable
-//ESSES DADOS SÃO APENAS PARA VISUALIZAR A IDEIA DO SISTEMA ELE AINDA NÃO PEGA A REFERENCIA REAL DO USUARIO
-fun ProfileScreen(modifier: Modifier = Modifier) {
-    val mockNome = "João Silva"
-    val mockEmail = "joao.silva@email.com"
-    val mockTelefone = "(11) 98765-4321"
-    val mockDataCadastro = "14/01/2026"
+fun ProfileScreen(
+    viewModel: MainViewModel,
+    modifier: Modifier = Modifier
+) {
+    val user = viewModel.user
+
+    val nome = user?.name?.ifBlank { "Usuário" } ?: "Carregando..."
+    val email = user?.email?.ifBlank { "Não informado" } ?: "Carregando..."
+
+    val telefone = "(81) 99999-9999"
+    val dataCadastro = "Membro LotoEasy"
 
     val laranjaLoto = Color(0xFFF15A24)
 
@@ -71,13 +77,13 @@ fun ProfileScreen(modifier: Modifier = Modifier) {
 
                 Column {
                     Text(
-                        text = mockNome,
+                        text = nome,
                         color = Color.White,
                         fontSize = 22.sp,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "Membro desde $mockDataCadastro",
+                        text = dataCadastro,
                         color = Color.White.copy(alpha = 0.8f),
                         fontSize = 14.sp
                     )
@@ -101,7 +107,7 @@ fun ProfileScreen(modifier: Modifier = Modifier) {
             )
 
             Button(
-                onClick = { /* Mocado */ },
+                onClick = { /* Ação de editar futuro */ },
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFFFFF2EC),
                     contentColor = laranjaLoto
@@ -119,16 +125,17 @@ fun ProfileScreen(modifier: Modifier = Modifier) {
             }
         }
 
-        ProfileFieldInfo(label = "Nome Completo", value = mockNome, icon = Icons.Default.Person)
+        // Campos de informações reais
+        ProfileFieldInfo(label = "Nome Completo", value = nome, icon = Icons.Default.Person)
         Spacer(modifier = Modifier.height(16.dp))
 
-        ProfileFieldInfo(label = "Email", value = mockEmail, icon = Icons.Default.Email)
+        ProfileFieldInfo(label = "Email", value = email, icon = Icons.Default.Email)
         Spacer(modifier = Modifier.height(16.dp))
 
-        ProfileFieldInfo(label = "Telefone", value = mockTelefone, icon = Icons.Default.Phone)
+        ProfileFieldInfo(label = "Telefone", value = telefone, icon = Icons.Default.Phone)
         Spacer(modifier = Modifier.height(16.dp))
 
-        ProfileFieldInfo(label = "Data de Cadastro", value = mockDataCadastro, icon = Icons.Default.DateRange)
+        ProfileFieldInfo(label = "Status da Conta", value = dataCadastro, icon = Icons.Default.DateRange)
     }
 }
 

@@ -1,5 +1,6 @@
 package com.example.lotoeasy.ui.screens
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -10,6 +11,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
@@ -21,7 +23,7 @@ import com.example.lotoeasy.ui.theme.LotoOrange
 @Composable
 fun RegisterScreen(
     modifier: Modifier = Modifier,
-    onRegisterClick: () -> Unit = {},
+    onRegisterClick: (String, String, String) -> Unit = { _, _, _ -> },
     onBackToLoginClick: () -> Unit = {}
 ) {
     var name by remember { mutableStateOf("") }
@@ -33,7 +35,7 @@ fun RegisterScreen(
     val primaryColor = LotoOrange
 
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .background(backgroundColor)
             .verticalScroll(rememberScrollState())
@@ -122,11 +124,11 @@ fun RegisterScreen(
         )
 
         Button(
-            onClick = onRegisterClick,
+            onClick = { onRegisterClick(name, email, password) },
             colors = ButtonDefaults.buttonColors(containerColor = primaryColor),
             shape = RoundedCornerShape(12.dp),
-            enabled = name.isNotEmpty() && email.isNotEmpty() &&
-                    password.isNotEmpty() && password == confirmPassword,
+            enabled = name.isNotBlank() && email.isNotBlank() &&
+                    password.isNotBlank() && password == confirmPassword,
             modifier = Modifier.fillMaxWidth().height(50.dp)
         ) {
             Text(

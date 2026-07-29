@@ -20,11 +20,35 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.lotoeasy.MainViewModel
 import com.example.lotoeasy.ui.theme.LotoOrange
+import java.text.NumberFormat
+import java.util.Locale
 
 @Composable
-fun DashboardScreen(modifier: Modifier = Modifier) {
+fun DashboardScreen(modifier: Modifier = Modifier, viewModel: MainViewModel) {
     val scrollState = rememberScrollState()
+
+    val lotomania = viewModel.lotomaniaState
+    val isLoading = viewModel.isLoadingLotomania
+    val taloes = viewModel.taloes
+
+    val currencyFormat = NumberFormat.getCurrencyInstance(Locale.Builder().setLanguage("pt").setRegion("BR").build())
+    val valorProximoPremio = lotomania?.valorEstimadoProximoConcurso?.let { currencyFormat.format(it) } ?: "R$ --"
+    val dataProximoSorteio = lotomania?.dataProximoConcurso ?: "--/--/----"
+
+    val concursoOficialAtual = lotomania?.numero?.toString() ?: ""
+    val dezenasSorteadas = lotomania?.listaDezenas?.mapNotNull { it.toIntOrNull() } ?: emptyList()
+
+    val taloesApurados = taloes.filter { it.concurso == concursoOficialAtual }
+
+    val taloesGanhadores = taloesApurados.filter { talao ->
+        val acertos = talao.numerosApostados.count { it in dezenasSorteadas }
+        acertos >= 15 || (dezenasSorteadas.isNotEmpty() && acertos == 0)
+    }
+
+    val totalGanhos = taloesGanhadores.size.toString()
+    val melhorPremioTexto = if (taloesGanhadores.isNotEmpty()) "Premiado!" else "R$ 0,00"
 
     Column(
         modifier = modifier
@@ -49,7 +73,7 @@ fun DashboardScreen(modifier: Modifier = Modifier) {
         Row(modifier = Modifier.fillMaxWidth()) {
             DashboardMetricCard(
                 title = "Sorteios Ganhos",
-                value = "3",
+                value = if (isLoading) "..." else totalGanhos,
                 icon = Icons.Default.Leaderboard,
                 brush = Brush.linearGradient(listOf(LotoOrange, Color(0xFFFA7E4B))),
                 modifier = Modifier.weight(1f)
@@ -57,7 +81,7 @@ fun DashboardScreen(modifier: Modifier = Modifier) {
             Spacer(modifier = Modifier.width(12.dp))
             DashboardMetricCard(
                 title = "Total de Talões",
-                value = "27",
+                value = taloes.size.toString(),
                 icon = Icons.Default.CardMembership,
                 brush = Brush.linearGradient(listOf(Color(0xFFFF9100), Color(0xFFFFAA33))),
                 modifier = Modifier.weight(1f)
@@ -67,7 +91,7 @@ fun DashboardScreen(modifier: Modifier = Modifier) {
         Row(modifier = Modifier.fillMaxWidth()) {
             DashboardMetricCard(
                 title = "Próximo Sorteio",
-                value = "09/05/2026",
+                value = if (isLoading) "..." else dataProximoSorteio,
                 icon = Icons.Default.DateRange,
                 brush = Brush.linearGradient(listOf(Color(0xFFE53935), Color(0xFFFF5252))),
                 modifier = Modifier.weight(1f)
@@ -75,7 +99,7 @@ fun DashboardScreen(modifier: Modifier = Modifier) {
             Spacer(modifier = Modifier.width(12.dp))
             DashboardMetricCard(
                 title = "Melhor Prêmio",
-                value = "R$ 1.250,00",
+                value = if (isLoading) "..." else melhorPremioTexto,
                 icon = Icons.AutoMirrored.Filled.TrendingUp,
                 brush = Brush.linearGradient(listOf(Color(0xFFC62828), Color(0xFFE53935))),
                 modifier = Modifier.weight(1f)
@@ -85,7 +109,7 @@ fun DashboardScreen(modifier: Modifier = Modifier) {
         Spacer(modifier = Modifier.height(24.dp))
 
         Text(
-            text = "Últimos Resultados",
+            text = "Último Resultado (Oficial)",
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
             color = Color(0xFF111111),
@@ -98,11 +122,29 @@ fun DashboardScreen(modifier: Modifier = Modifier) {
             colors = CardDefaults.cardColors(containerColor = Color.White)
         ) {
             Column(modifier = Modifier.padding(12.dp)) {
-                ResultRow(concurso = "Sorteio 001", data = "07/05/2026", acertos = "7", ganhou = false)
-                HorizontalDivider(color = Color(0xFFEEEEEE), modifier = Modifier.padding(vertical = 8.dp))
-                ResultRow(concurso = "Sorteio 002", data = "06/05/2026", acertos = "15", ganhou = true)
-                HorizontalDivider(color = Color(0xFFEEEEEE), modifier = Modifier.padding(vertical = 8.dp))
-                ResultRow(concurso = "Sorteio 003", data = "05/05/2026", acertos = "8", ganhou = false)
+                if (isLoading) {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                } else if (lotomania != null) {
+                    val maiorAcertoNoConcurso = taloesApurados.maxOfOrNull { talao ->
+                        talao.numerosApostados.count { it in dezenasSorteadas }
+                    }
+
+                    ResultRow(
+                        concurso = "Concurso ${lotomania.numero}",
+                        data = lotomania.dataApuracao ?: "",
+                        acertos = if (maiorAcertoNoConcurso != null) "$maiorAcertoNoConcurso acertos" else "Sem apostas",
+                        ganhou = taloesGanhadores.isNotEmpty()
+                    )
+
+                    Text(
+                        text = "Dezenas: ${lotomania.listaDezenas?.joinToString(" - ")}",
+                        fontSize = 12.sp,
+                        color = Color.Gray,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                } else {
+                    Text("Não foi possível carregar os dados.", color = Color.Gray)
+                }
             }
         }
 
@@ -122,7 +164,17 @@ fun DashboardScreen(modifier: Modifier = Modifier) {
             colors = CardDefaults.cardColors(containerColor = Color.White)
         ) {
             Column(modifier = Modifier.padding(12.dp)) {
-                NextDrawRow(concurso = "Concurso 2850", data = "09/05/2026", valor = "R$ 3.500.000,00")
+                if (isLoading) {
+                    Text("Carregando...", color = Color.Gray)
+                } else if (lotomania != null) {
+                    NextDrawRow(
+                        concurso = "Concurso ${lotomania.numeroConcursoProximo ?: (lotomania.numero?.plus(1))}",
+                        data = dataProximoSorteio,
+                        valor = valorProximoPremio
+                    )
+                } else {
+                    Text("Dados indisponíveis.", color = Color.Gray)
+                }
             }
         }
     }
@@ -160,7 +212,7 @@ fun ResultRow(concurso: String, data: String, acertos: String, ganhou: Boolean) 
         }
         Column(horizontalAlignment = Alignment.End) {
             Text(text = acertos, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = if (ganhou) Color(0xFF2E7D32) else Color(0xFFC62828))
-            Text(text = if (ganhou) "Ganhou!" else "Perdeu", fontSize = 12.sp, fontWeight = FontWeight.Medium, color = if (ganhou) Color(0xFF2E7D32) else Color.Gray)
+            Text(text = if (ganhou) "Ganhou!" else "Apurado", fontSize = 12.sp, fontWeight = FontWeight.Medium, color = if (ganhou) Color(0xFF2E7D32) else Color.Gray)
         }
     }
 }

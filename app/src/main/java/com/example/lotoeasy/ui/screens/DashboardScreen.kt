@@ -125,14 +125,21 @@ fun DashboardScreen(modifier: Modifier = Modifier, viewModel: MainViewModel) {
                 if (isLoading) {
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
                 } else if (lotomania != null) {
-                    val maiorAcertoNoConcurso = taloesApurados.maxOfOrNull { talao ->
+                    val acertosDosTaloes = taloesApurados.map { talao ->
                         talao.numerosApostados.count { it in dezenasSorteadas }
+                    }
+
+                    val exibicaoAcertos = when {
+                        acertosDosTaloes.isEmpty() -> "Sem apostas"
+                        acertosDosTaloes.contains(0) -> "0 acertos (Premiado!)"
+                        acertosDosTaloes.any { it >= 15 } -> "${acertosDosTaloes.filter { it >= 15 }.maxOrNull()} acertos"
+                        else -> "${acertosDosTaloes.maxOrNull()} acertos"
                     }
 
                     ResultRow(
                         concurso = "Concurso ${lotomania.numero}",
                         data = lotomania.dataApuracao ?: "",
-                        acertos = if (maiorAcertoNoConcurso != null) "$maiorAcertoNoConcurso acertos" else "Sem apostas",
+                        acertos = exibicaoAcertos,
                         ganhou = taloesGanhadores.isNotEmpty()
                     )
 

@@ -171,7 +171,7 @@ fun HistoryCard(
                         text = if (jaApurado) "$acertosReais" else "?",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
-                        color = if (jaApurado && acertosReais >= 15) Color(0xFF16A34A) else LotoOrange,
+                        color = if (jaApurado && (acertosReais >= 15 || acertosReais == 0)) Color(0xFF16A34A) else LotoOrange,
                         modifier = Modifier.padding(top = 2.dp)
                     )
                 }

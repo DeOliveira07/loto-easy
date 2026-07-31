@@ -66,8 +66,13 @@ class MainViewModel(private val db: FBDatabase) : ViewModel(), FBDatabase.Listen
         numeros: List<Int>,
         onResult: (Boolean, String?) -> Unit
     ) {
-        if (numeros.isEmpty()) {
-            onResult(false, "Selecione pelo menos um número!")
+        if (numeros.size != 50) {
+            onResult(false, "O talão deve conter exatamente 50 números!")
+            return
+        }
+
+        if (titulo.length > 100) {
+            onResult(false, "O nome do talão deve ter no máximo 100 caracteres!")
             return
         }
 

@@ -71,8 +71,8 @@ class MainViewModel(private val db: FBDatabase) : ViewModel(), FBDatabase.Listen
             return
         }
 
-        if (titulo.length > 50) {
-            onResult(false, "O nome do talão deve ter no máximo 50 caracteres!")
+        if (titulo.length > 100) {
+            onResult(false, "O nome do talão deve ter no máximo 100 caracteres!")
             return
         }
 

@@ -59,6 +59,7 @@ fun RaffleRegistrationScreen(
             .background(BackgroundWhite)
             .verticalScroll(scrollState)
             .padding(16.dp)
+            .imePadding()
     ) {
         // Cabeçalho
         Text(
@@ -83,11 +84,14 @@ fun RaffleRegistrationScreen(
             Column(modifier = Modifier.padding(16.dp)) {
                 OutlinedTextField(
                     value = raffleName,
-                    onValueChange = { raffleName = it },
+                    onValueChange = { 
+                        if (it.length <=100) raffleName = it
+                    },
                     label = { Text("Nome do Talão") },
                     placeholder = { Text("Ex: Talão Lucky 001") },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
+                    singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = LotoOrange,
                         unfocusedBorderColor = Color.Gray,
@@ -200,8 +204,8 @@ fun RaffleRegistrationScreen(
                             Toast.makeText(context, "Por favor, dê um nome ao talão.", Toast.LENGTH_SHORT).show()
                             return@Button
                         }
-                        if (selectedNumbers.isEmpty()) {
-                            Toast.makeText(context, "Selecione ao menos um número.", Toast.LENGTH_SHORT).show()
+                        if (selectedNumbers.size != 50) {
+                            Toast.makeText(context, "Você deve selecionar exatamente 50 números.", Toast.LENGTH_SHORT).show()
                             return@Button
                         }
 
@@ -247,7 +251,12 @@ fun RaffleRegistrationScreen(
                         selectedNumbers = if (isSelected) {
                             selectedNumbers - num
                         } else {
-                            selectedNumbers + num
+                            if (selectedNumbers.size < 50) {
+                                selectedNumbers + num
+                            } else {
+                                Toast.makeText(context, "Limite de 50 números atingido", Toast.LENGTH_SHORT).show()
+                                selectedNumbers
+                            }
                         }
                     }
                 )

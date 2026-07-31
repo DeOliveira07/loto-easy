@@ -29,3 +29,5 @@ replay_pid*
 
 # Kotlin Gradle plugin data
 .kotlin/
+
+local.properties

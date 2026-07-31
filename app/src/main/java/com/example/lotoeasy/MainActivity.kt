@@ -1,47 +1,317 @@
 package com.example.lotoeasy
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material3.*
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
+import com.example.lotoeasy.db.fb.FBDatabase
+import com.example.lotoeasy.ui.screens.DashboardScreen
+import com.example.lotoeasy.ui.screens.HistoryScreen
+import com.example.lotoeasy.ui.screens.LoginScreen
+import com.example.lotoeasy.ui.screens.NextDrawScreen
+import com.example.lotoeasy.ui.screens.ProfileScreen
+import com.example.lotoeasy.ui.screens.RaffleRegistrationScreen
+import com.example.lotoeasy.ui.screens.RegisterScreen
+import com.example.lotoeasy.ui.theme.LotoOrange
 import com.example.lotoeasy.ui.theme.LotoeasyTheme
+import kotlinx.coroutines.launch
+import java.util.concurrent.TimeUnit
 
 class MainActivity : ComponentActivity() {
+
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            agendarNotificacaoLocal()
+        }
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+
+        checarEAgendarNotificacao()
+
         setContent {
             LotoeasyTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
+                val fbDB = remember { FBDatabase() }
+                val viewModel: MainViewModel = viewModel(
+                    factory = MainViewModelFactory(fbDB)
+                )
+
+                val navController = rememberNavController()
+                val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+                val scope = rememberCoroutineScope()
+                val context = LocalContext.current
+
+                val navBackStackEntry = navController.currentBackStackEntryAsState()
+                val currentRoute = navBackStackEntry.value?.destination?.route
+
+                val showDrawer = currentRoute != "login" && currentRoute != "register" && currentRoute != null
+
+                ModalNavigationDrawer(
+                    drawerState = drawerState,
+                    gesturesEnabled = showDrawer,
+                    drawerContent = {
+                        ModalDrawerSheet {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = if (viewModel.user != null) "Olá, ${viewModel.user?.name}" else "LOTO-EASY",
+                                modifier = Modifier.padding(16.dp),
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = LotoOrange
+                            )
+
+                            NavigationDrawerItem(
+                                icon = { Icon(Icons.Default.Home, null) },
+                                label = { Text("Início") },
+                                selected = currentRoute == "dashboard",
+                                onClick = {
+                                    navController.navigate("dashboard") { launchSingleTop = true }
+                                    scope.launch { drawerState.close() }
+                                },
+                                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
+                                colors = NavigationDrawerItemDefaults.colors(
+                                    selectedIconColor = LotoOrange,
+                                    selectedTextColor = LotoOrange,
+                                    selectedContainerColor = LotoOrange.copy(alpha = 0.1f)
+                                )
+                            )
+
+                            NavigationDrawerItem(
+                                icon = { Icon(Icons.Default.DateRange, null) },
+                                label = { Text("Próximos Sorteios") },
+                                selected = currentRoute == "next_draws",
+                                onClick = {
+                                    navController.navigate("next_draws") { launchSingleTop = true }
+                                    scope.launch { drawerState.close() }
+                                },
+                                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
+                                colors = NavigationDrawerItemDefaults.colors(
+                                    selectedIconColor = LotoOrange,
+                                    selectedTextColor = LotoOrange,
+                                    selectedContainerColor = LotoOrange.copy(alpha = 0.1f)
+                                )
+                            )
+
+                            NavigationDrawerItem(
+                                icon = { Icon(Icons.Default.History, null) },
+                                label = { Text("Histórico de Registros") },
+                                selected = currentRoute == "history",
+                                onClick = {
+                                    navController.navigate("history") { launchSingleTop = true }
+                                    scope.launch { drawerState.close() }
+                                },
+                                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
+                                colors = NavigationDrawerItemDefaults.colors(
+                                    selectedIconColor = LotoOrange,
+                                    selectedTextColor = LotoOrange,
+                                    selectedContainerColor = LotoOrange.copy(alpha = 0.1f)
+                                )
+                            )
+
+                            NavigationDrawerItem(
+                                icon = { Icon(Icons.Default.Add, null) },
+                                label = { Text("Cadastrar Talão") },
+                                selected = currentRoute == "raffle_registration",
+                                onClick = {
+                                    navController.navigate("raffle_registration") { launchSingleTop = true }
+                                    scope.launch { drawerState.close() }
+                                },
+                                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
+                                colors = NavigationDrawerItemDefaults.colors(
+                                    selectedIconColor = LotoOrange,
+                                    selectedTextColor = LotoOrange,
+                                    selectedContainerColor = LotoOrange.copy(alpha = 0.1f)
+                                )
+                            )
+
+                            NavigationDrawerItem(
+                                icon = { Icon(Icons.Default.AccountCircle, null) },
+                                label = { Text("Meu Perfil") },
+                                selected = currentRoute == "profile",
+                                onClick = {
+                                    navController.navigate("profile") { launchSingleTop = true }
+                                    scope.launch { drawerState.close() }
+                                },
+                                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
+                                colors = NavigationDrawerItemDefaults.colors(
+                                    selectedIconColor = LotoOrange,
+                                    selectedTextColor = LotoOrange,
+                                    selectedContainerColor = LotoOrange.copy(alpha = 0.1f)
+                                )
+                            )
+
+                            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+                            NavigationDrawerItem(
+                                icon = { Icon(Icons.AutoMirrored.Filled.ExitToApp, null) },
+                                label = { Text("Sair") },
+                                selected = false,
+                                onClick = {
+                                    navController.navigate("login") {
+                                        popUpTo("dashboard") { inclusive = true }
+                                    }
+                                    scope.launch { drawerState.close() }
+                                },
+                                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                            )
+                        }
+                    }
+                ) {
+                    Scaffold(
+                        topBar = {
+                            if (showDrawer) {
+                                TopAppBar(
+                                    title = {
+                                        Text(
+                                            when (currentRoute) {
+                                                "dashboard" -> "Início"
+                                                "next_draws" -> "Sorteios"
+                                                "history" -> "Histórico de Registros"
+                                                "raffle_registration" -> "Cadastrar Talão"
+                                                "profile" -> "Meu Perfil"
+                                                else -> "Loto-Easy"
+                                            }
+                                        )
+                                    },
+                                    navigationIcon = {
+                                        IconButton(onClick = {
+                                            scope.launch { drawerState.open() }
+                                        }) {
+                                            Icon(Icons.Default.Menu, contentDescription = "Menu")
+                                        }
+                                    },
+                                    colors = TopAppBarDefaults.topAppBarColors(
+                                        containerColor = LotoOrange.copy(alpha = 0.08f),
+                                        titleContentColor = LotoOrange,
+                                        navigationIconContentColor = LotoOrange
+                                    )
+                                )
+                            }
+                        }
+                    ) { innerPadding ->
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(innerPadding),
+                            color = MaterialTheme.colorScheme.background
+                        ) {
+                            NavHost(
+                                navController = navController,
+                                startDestination = "login"
+                            ) {
+                                composable("login") {
+                                    LoginScreen(
+                                        onLoginClick = { email, password ->
+                                            viewModel.login(email, password) { success, error ->
+                                                if (success) {
+                                                    Toast.makeText(context, "Bem-vindo!", Toast.LENGTH_SHORT).show()
+                                                    navController.navigate("dashboard") {
+                                                        popUpTo("login") { inclusive = true }
+                                                    }
+                                                } else {
+                                                    Toast.makeText(context, "Falha no login: $error", Toast.LENGTH_LONG).show()
+                                                }
+                                            }
+                                        },
+                                        onRegisterClick = { navController.navigate("register") }
+                                    )
+                                }
+
+                                composable("register") {
+                                    RegisterScreen(
+                                        onRegisterClick = { name, email, password ->
+                                            viewModel.register(name, email, password) { success, error ->
+                                                if (success) {
+                                                    Toast.makeText(context, "Registro OK!", Toast.LENGTH_LONG).show()
+                                                    navController.navigate("dashboard") {
+                                                        popUpTo("login") { inclusive = true }
+                                                    }
+                                                } else {
+                                                    Toast.makeText(context, "Registro FALHOU: $error", Toast.LENGTH_LONG).show()
+                                                }
+                                            }
+                                        },
+                                        onBackToLoginClick = { navController.popBackStack() }
+                                    )
+                                }
+
+                                composable("dashboard") { DashboardScreen(viewModel = viewModel) }
+                                composable("profile") { ProfileScreen(viewModel = viewModel) }
+                                composable(route = "next_draws") { NextDrawScreen(viewModel = viewModel) }
+                                composable("history") { HistoryScreen(viewModel = viewModel) }
+                                composable("raffle_registration") { RaffleRegistrationScreen(viewModel = viewModel) }
+                            }
+                        }
+                    }
                 }
             }
         }
     }
-}
 
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
+    private fun checarEAgendarNotificacao() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) == PackageManager.PERMISSION_GRANTED
+            ) {
+                agendarNotificacaoLocal()
+            } else {
+                requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        } else {
+            agendarNotificacaoLocal()
+        }
+    }
 
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    LotoeasyTheme {
-        Greeting("Android")
+    private fun agendarNotificacaoLocal() {
+        // Disparo imediato para testar e ver a notificação funcionando
+        val testWork = OneTimeWorkRequestBuilder<SorteioNotificationWorker>().build()
+        WorkManager.getInstance(applicationContext).enqueue(testWork)
+
+        val workRequest = PeriodicWorkRequestBuilder<SorteioNotificationWorker>(24, TimeUnit.HOURS).build()
+        WorkManager.getInstance(applicationContext).enqueueUniquePeriodicWork(
+            "LotoEasyNotificationWork",
+            ExistingPeriodicWorkPolicy.KEEP,
+            workRequest
+        )
     }
 }
